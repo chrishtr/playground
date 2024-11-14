@@ -1,0 +1,80 @@
+<!doctype HTML>
+<script src="https://unpkg.com/htmx.org@2.0.3"></script>
+
+<pre>Example 1: declarative popover.
+
+  Narrative:
+    * The code below looks declarative and avoids details of how it's
+    implemented by the framework.
+    * It uses declarative mechanisms (popover) when possible.
+    * It works in an HTML-forward way that treats the JS as a polyfill
+</pre>
+<div id=popover_target popover>
+  <div id=loading_indicator class="htmx-indicator">
+    Popover loading...
+  </div>
+</div>
+<button popovertarget=popover_target hx-get="/popover" hx-target=#popover_target
+ hx-indicator="#loading_indicator">
+  Show the popover with HTMX.
+</button>
+
+<br>
+
+<pre>
+ Example 2: the same as the above but with the fetch API instead of HTMX.
+
+ Narrative:
+   * Gives an example of async/await and the Fetch API.
+   * Shows how the above is just sytactic sugar for some code.
+</pre>
+<div id=popover_target2 popover>
+  <div id=loading_indicator2 style="display:none">
+    Popover loading...
+  </div>
+</div>
+<button popovertarget=popover_target2 onclick=getPopoverContents()>
+  Show the popover with vanilla JS.
+</button>
+
+<script>
+async function getPopoverContents() {
+  loading_indicator2.style.display = "block";
+  let response = await fetch ("/popover");
+  if (!response.ok) {
+    throw new Error(`Response status: ${response.status}`);
+  }
+  let html = await response.text();
+  loading_indicator2.style.display = "none";
+  popover_target2.innerHTML = html;
+}
+
+</script>
+
+
+<pre>
+Example 3: form validation
+
+Narrative:
+
+  * Client-side form validation is one common type of business logic.
+  * Once again they can be seen as progressive enhancements of what's built
+  into the browser (e.g. the required attribute is a built-in feature, as is
+  default styling of the validation error message).
+  * These form validations must be repeated on the server for security reasons.
+</pre>
+<script>
+let checkValid = (obj) => {
+  if (obj.value != "valid") {
+    obj.setCustomValidity('Not submitted correctly. You must type "valid"')
+    htmx.find('#example-form').reportValidity() 
+  }
+}
+</script>
+
+<form id=example-form hx-post="/form">
+  <input type=text required
+  onkeyup="this.setCustomValidity('')"
+  hx-on:htmx:validation:validate="checkValid(this)"></input>
+  <input type=submit></input>
+</form>

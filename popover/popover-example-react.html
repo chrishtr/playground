@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <div id="root"></div>
+</body>
+<!--
+Add support for JSX.
+
+For the purposes of this demo, we have to load babel, which adds in the JSX
+syntax to JavaScript and dynamically parses scripts of type text/babel and
+converts them to JavaScript. In a production application, there would instead
+be an offline build pipeline that converts the JSX to JavaScript before sending
+it to the client, and it wouldn't be necessary to server the Babel JS
+directly.
+-->
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<!-- 
+Add support for React (allows writing JavaScript to create a render tree
+from JSX).
+
+Add support for ReactDOM (allows updating the DOM from the React render tree).
+
+Note: This importmap specifies a dev version of React and ReactDOM.
+A production application would "compile" these into a more optimized form
+and maybe bundle them into one script.
+-->
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react?dev",
+    "react-dom/client": "https://esm.sh/react-dom/client?dev"
+  }
+}
+</script>
+<script type="text/babel" data-type="module">
+
+// JavaScript module syntax for importing symbols from the react and react-dom
+// libraries specified in the importmap.
+import React, { StrictMode, useEffect, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+
+// Define the root React component for the application. In our case there
+// is only one component.
+let App = function MyApp() {
+  // Define component-global state for whether the popover has been opened at
+  // least once.
+
+  // Note: all state that affects react rendering must be in a component-global
+  // or input parameter, even if that state is also represented in the browser
+  // internals, because otherwise React will get out of sync with the browser.
+  // Also, if we wanted |popoverOpened| to be kept up-to-date with whether the
+  // popover was actually opened, then we'd have to add special code to listen
+  // for the `toggle` browser event on the popover (in our case we don't
+  // happen to need that, but a real application probably would).
+  const [popoverOpened, setPopoverOpened] = useState(false);
+
+  // Define global state for the popover HTML contents.
+
+  // Note: this is not how a React site would in general be implemented with
+  // React best practices, because the content HTML's structure would be
+  // invisible to React and might cause problems because React doesn't
+  // understand it, potentially leading to event handling bugs (because React
+  // proxies all input events for its controlled subtree under #root through
+  // its own mechanisms). This can be fixed by creating a client-side React
+  // render template for the popover's structured HTML contents, and filing it
+  // in with JSON parameters returned by the server. In our case, the response
+  // from the server is just some innerText, so it's ok.
+  const [popoverContent, setPopoverContent] = useState(null);
+
+  // Declare a side-effect function for loading from the server, and that
+  // depends on the |popoverOpened| global state variable (see second parameter
+  // to useEffect).
+
+  // Note: all application logic that happens outside of React's control needs
+  // to be defined as side-effects so they can be replayed if necessary.
+  //
+  // Note: the |ignore| variable and boilerplate code is necessary to deal with
+  // the fact that the |loadPopoverContent| function is async. See:
+  // https://react.dev/reference/react/useEffect#fetching-data-with-effects
+  useEffect(() => {
+    async function loadPopoverContent() {
+      let ignore = false;
+      let response = await fetch ("/popover");
+      if (!response.ok) {
+        throw new Error(`Response status: ${response.status}`);
+      }
+      let html = await response.text();
+      if (!ignore) {
+        setPopoverContent(html);
+      }
+    }
+    if (popoverOpened) {
+      let ignore = false;
+      loadPopoverContent();
+      return () => {
+        ignore = true;
+      }
+    } 
+  }, [popoverOpened])
+
+  // All React component functions return a JSX string to represent the
+  // rendered output.
+  return (
+    <div>
+      <div id="popover_target" popover="auto">
+        {popoverContent ?? "Loading popover..."}
+      </div>
+      <button popovertarget="popover_target" onClick={setPopoverOpened}>
+        Show the popover with React.
+      </button>
+    </div>
+  );
+}
+
+const root = createRoot(document.getElementById('root'));
+root.render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);
+</script>
+</html>

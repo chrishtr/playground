@@ -5,6 +5,9 @@ import urllib.parse
 def handle_connection(conx):
     req = conx.makefile("b")
     reqline = req.readline().decode('utf8')
+    print('handle_connection:')
+    if len(reqline) == 0:
+        return
     method, url, version = reqline.split(" ", 2)
     assert method in ["GET", "POST"]
     headers = {}
@@ -32,8 +35,11 @@ def do_request(method, url, headers, body):
         return "200 OK", show_popover()
     elif method == "POST" and url == "/form":
         return "200 OK", show_form()
-    elif method == "GET" and url == "/":
+    elif method == "GET" and url == "/popover-example.html":
         with open("popover-example.html") as f:
+            return "200 OK", f.read()
+    elif method == "GET" and url == "/popover-example-react.html":
+        with open("popover-example-react.html") as f:
             return "200 OK", f.read()
     
     return "404 Not Found", not_found(url, method)

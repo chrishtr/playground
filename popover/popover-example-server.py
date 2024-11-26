@@ -5,7 +5,6 @@ import urllib.parse
 def handle_connection(conx):
     req = conx.makefile("b")
     reqline = req.readline().decode('utf8')
-    print('handle_connection:')
     if len(reqline) == 0:
         return
     method, url, version = reqline.split(" ", 2)
